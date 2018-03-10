@@ -19,6 +19,19 @@ function createIconv(from,to,text)
   return ostr
 end
 
+function strSplit(inputstr, sep)
+    if sep == nil then
+      sep = "%s"
+    end
+    local t={}
+    local i=1
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+       t[i] = str
+       i = i + 1
+    end
+    return t
+end
+
 local function explode(_str, seperator)
 	local pos, arr = 0, {}
                 for st, sp in function() return string.find( _str, seperator, pos, true ) end do
@@ -68,9 +81,11 @@ ngx.var.resp_content_encoding = encoding
 ngx.var.resp_content_type = type
 if (ngx.arg[2])
 then
-   if(type == "text/html;charset=GBK")
+   local t = strSplit(type, "=")
+   type = t[2]
+   if(type and type ~= "utf8" and type ~= "utf-8" and type ~= "UTF-8" and type ~= "UTF8")
    then
-	  ngx.var.resp_body = createIconv("gbk", "utf-8", ngx.ctx.buffered)
+	  ngx.var.resp_body = createIconv(type, "utf-8", ngx.ctx.buffered)
    else
 	  ngx.var.resp_body = ngx.ctx.buffered
    end
