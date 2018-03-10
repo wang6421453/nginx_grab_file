@@ -71,28 +71,39 @@ end
 
 
 
+local filePath = "/usr/local/nginx/files/"
 
 --response_data
 local resp_body = ngx.arg[1];
 ngx.ctx.buffered = (ngx.ctx.buffered or "") .. resp_body
 local encoding = ngx.header["Content-Encoding"]
-local type = ngx.header["Content-Type"]
+local contentType = ngx.header["Content-Type"]
 ngx.var.resp_content_encoding = encoding
-ngx.var.resp_content_type = type
+ngx.var.resp_content_type = contentType
 if (ngx.arg[2])
 then
-   local t = strSplit(type, "=")
-   type = t[2]
-   if(type and type ~= "utf8" and type ~= "utf-8" and type ~= "UTF-8" and type ~= "UTF8")
+   if(contentType == "application/msword")
    then
-	  ngx.var.resp_body = createIconv(type, "utf-8", ngx.ctx.buffered)
+	local contentDispos = ngx.header["Content-Disposition"]
+	local start_pos,end_pos,fileName = string.find(contentDispos,'filename=(.*)')
+	if(fileName)
+	then
+		fileName = createIconv("GBK","utf-8",fileName)
+		writeFile(ngx.ctx.buffered, filePath..fileName)
+	end
    else
-	  ngx.var.resp_body = ngx.ctx.buffered
-   end
+  	 local t = strSplit(contentType, "=")
+  	 type = t[2]
+  	 if(type and type ~= "utf8" and type ~= "utf-8" and type ~= "UTF-8" and type ~= "UTF8")
+  	 then
+		  ngx.var.resp_body = createIconv(type, "utf-8", ngx.ctx.buffered)
+  	 else
+		  ngx.var.resp_body = ngx.ctx.buffered
+  	 end
+    end
 end
 
 --request_data(save file)
-local filePath = "/usr/local/nginx/files/"
 receive_headers = ngx.req.get_headers()
 local requestContentType = receive_headers["content-type"]
 local body_data = ngx.req.get_body_data()
